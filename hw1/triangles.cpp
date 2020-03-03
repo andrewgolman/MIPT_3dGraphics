@@ -22,7 +22,7 @@ int main(void) {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 1);
 
 	// Open a window and create its OpenGL context
-	window = glfwCreateWindow(1024, 768, "HW1- Triangles", NULL, NULL);
+	window = glfwCreateWindow(1024, 768, "HW1 - Triangles", NULL, NULL);
 	if(window == NULL) {
 		fprintf(stderr, "Failed to open GLFW window");
 		getchar();
@@ -57,6 +57,9 @@ int main(void) {
 	// Create and compile our GLSL program from the shaders
 	GLuint programID1 = LoadShaders( "SimpleVertexShader.vertexshader", "FirstTriangle.fragmentshader" );
 	GLuint programID2 = LoadShaders( "SimpleVertexShader.vertexshader", "SecondTriangle.fragmentshader" );
+
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	static const GLfloat g_vertex_buffer_data[] = {
 		 0.5f,  0.5f, 0.0f,

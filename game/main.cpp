@@ -1,6 +1,8 @@
 // Include standard headers
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
+#include <vector>
+
 
 // Include GLEW
 #include <GL/glew.h>
@@ -18,7 +20,7 @@ using namespace glm;
 //#include <common/texture.hpp>
 #include <tutorial06_keyboard_and_mouse/controls.hpp>
 
-int main( void )
+int main()
 {
     // Initialise GLFW
     if( !glfwInit() )
@@ -72,21 +74,16 @@ int main( void )
     glEnable(GL_CULL_FACE);
 
     // Create and compile our GLSL program from the shaders
-    GLuint floorProgramID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader" );
+    GLuint ProgramID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader" );
 
     // Get a handle for our "MVP" uniform
-    GLuint floorMatrixID = glGetUniformLocation(floorProgramID, "MVP");
+    GLuint floorMatrixID = glGetUniformLocation(ProgramID, "MVP");
 
     // Get a handle for our buffers
-    GLuint vertexPosition_modelspaceID = glGetAttribLocation(floorProgramID, "vertexPosition_modelspace");
-    GLuint vertexColorID = glGetAttribLocation(floorProgramID, "vertexColor");
+    GLuint vertexPosition_modelspaceID = glGetAttribLocation(ProgramID, "vertexPosition_modelspace");
+    GLuint vertexColorID = glGetAttribLocation(ProgramID, "vertexColor");
 
-    // Projection matrix : 45� Field of View, 4:3 ratio, display range : 0.1 unit <-> 100 units
-    glm::mat4 Projection = glm::perspective(45.0f, 4.0f / 3.0f, 0.1f, 100.0f);
-    // Model matrix : an identity matrix (model will be at the origin)
-    glm::mat4 Model      = glm::mat4(1.0f);
-
-    static const GLfloat floor_vertex_buffer_data[] = {
+    std::vector<GLfloat> g_vertex_buffer_data = {
            -5.0f, 0.0f, -5.0f,
             5.0f, 0.0f,  5.0f,
             5.0f, 0.0f, -5.0f,
@@ -94,7 +91,7 @@ int main( void )
            -5.0f, 0.0f, -5.0f,
            -5.0f, 0.0f,  5.0f,
     };
-    static const GLfloat floor_color_buffer_data[] = {
+    std::vector<GLfloat> g_color_buffer_data = {
             0.5, 0.3, 0.1,
             0.5, 0.3, 0.1,
             0.5, 0.3, 0.1,
@@ -103,37 +100,30 @@ int main( void )
             0.5, 0.3, 0.1,
     };
 
+    // add objects to buffer
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(floor_vertex_buffer_data), floor_vertex_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * 4, g_vertex_buffer_data.data(), GL_STATIC_DRAW);
 
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(floor_color_buffer_data), floor_color_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * 4, g_color_buffer_data.data(), GL_STATIC_DRAW);
 
-    // initial pos
-    vec3 Eye = glm::vec3(0, 0, 2);
-    vec3 Center = glm::vec3(1, 0, 0);
-    vec3 Up = glm::vec3(0, 1, 0);
-
-    float time = 0.f;
-
-    do{
-        time += 1.f;
-
+    do {
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        // Get position from controls
         Controls::computeMatricesFromInputs();
         glm::mat4 ProjectionMatrix = Controls::getProjectionMatrix();
         glm::mat4 ViewMatrix = Controls::getViewMatrix();
         glm::mat4 ModelMatrix = glm::mat4(1.0);
         glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
-        // Use our shader
-        glUseProgram(floorProgramID);
+        // Use main shader
+        glUseProgram(ProgramID);
 
         // Send our transformation to the currently bound shader,
         // in the "MVP" uniform
@@ -142,29 +132,15 @@ int main( void )
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(vertexPosition_modelspaceID);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(
-                vertexPosition_modelspaceID, // The attribute we want to configure
-                3,                           // size
-                GL_FLOAT,                    // type
-                GL_FALSE,                    // normalized?
-                0,                           // stride
-                (void*)0                     // array buffer offset
-        );
+        glVertexAttribPointer(vertexPosition_modelspaceID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         // 2nd attribute buffer : colors
         glEnableVertexAttribArray(vertexColorID);
         glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-        glVertexAttribPointer(
-                vertexColorID,               // The attribute we want to configure
-                3,                           // size
-                GL_FLOAT,                    // type
-                GL_FALSE,                    // normalized?
-                0,                           // stride
-                (void*)0                     // array buffer offset
-        );
+        glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-        // Draw the triangleS !
-        glDrawArrays(GL_TRIANGLES, 0, 8*3); // 12*3 indices starting at 0 -> 12 triangles
+        // Draw the triangles
+        glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size() / 3);
 
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);
@@ -180,11 +156,10 @@ int main( void )
     // Cleanup VBO and shader
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &colorbuffer);
-    glDeleteProgram(floorProgramID);
+    glDeleteProgram(ProgramID);
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
 
     return 0;
 }
-

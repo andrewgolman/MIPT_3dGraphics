@@ -17,7 +17,6 @@ if( CMAKE_BINARY_DIR MATCHES " " )
 endif()
 
 
-
 # Compile external dependencies
 add_subdirectory (external)
 
@@ -55,26 +54,18 @@ add_definitions(
         -DGLEW_STATIC
         -D_CRT_SECURE_NO_WARNINGS
 )
-# Tutorial 6
+
 add_executable(game
         main.cpp
         controls.hpp
         objects.hpp
+        shader.hpp
+        shader.cpp
         )
 target_link_libraries(game
         ${ALL_LIBS}
         )
 
 # Xcode and Visual working directories
-set_target_properties(game PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}/game/")
-create_target_launcher(game WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/game/")
-
-if (NOT ${CMAKE_GENERATOR} MATCHES "Xcode" )
-    add_custom_command(
-            TARGET game POST_BUILD
-            COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_CFG_INTDIR}/tutorial06_keyboard_and_mouse${CMAKE_EXECUTABLE_SUFFIX}" "${CMAKE_CURRENT_SOURCE_DIR}/game/"
-    )
-
-elseif (${CMAKE_GENERATOR} MATCHES "Xcode" )
-
-endif (NOT ${CMAKE_GENERATOR} MATCHES "Xcode" )
+set_target_properties(game PROPERTIES XCODE_ATTRIBUTE_CONFIGURATION_BUILD_DIR "${CMAKE_CURRENT_SOURCE_DIR}")
+create_target_launcher(game WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}")

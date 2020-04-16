@@ -3,4 +3,3 @@ cmake-build-debug
 distrib
 external
 *.DS_Store
-g

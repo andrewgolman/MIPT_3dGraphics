@@ -9,9 +9,19 @@
 #include <glm/gtc/matrix_transform.hpp>
 
 class Triangle {
-    std::vector<glm::vec3>& points;
+    std::vector<glm::vec3> points;
 
 public:
+    Triangle(const std::vector<float>& data) {
+        assert(data.size() == 9);
+        for (size_t i = 0; i < 3; ++i) {
+            auto iter = data.begin() + 3 * i;
+            points.emplace_back(
+                    glm::vec3(*iter, *(iter+1), *(iter+2))
+            );
+        }
+    }
+
     Triangle(const std::vector<glm::vec3>& points) : points(points) {
         assert(points.size() == 3);
     }
@@ -26,52 +36,57 @@ public:
         }
     }
 
-    std::vector<glm::vec3>& get_points() const {
+    const std::vector<glm::vec3>& get_points() const {
         return points;
     }
 };
 
 
 class Buffer {
-    std::vector<GLfloat> data;
+    std::vector<GLfloat> _vertex_data;
 public:
     Buffer() {}
 
-    std::vector<GLfloat>& data() const {
-        return data;
+    const void* vertex_data() {
+        return _vertex_data.data();
+    }
+
+    const void* color_data() {
+        throw;
     }
 
     size_t size() const {
-        return data.size();
+        return _vertex_data.size();
     }
 
     size_t add(const std::vector<Triangle>& triangles) {
-        size_t begin = data.size();
-        for (const auto& triangle: triangles) {
-            for (const auto& point : triangle) {
-                for (const auto& coordinate : point) {
-                    data.emplace_back(coordinate);
-                }
+        size_t begin = _vertex_data.size();
+        for (auto& triangle: triangles) {
+            for (const auto& point : triangle.get_points()) {
+                    _vertex_data.emplace_back(point.x);
+                    _vertex_data.emplace_back(point.y);
+                    _vertex_data.emplace_back(point.z);
             }
         }
         return begin;
     }
 
     void remove(size_t begin, size_t length) {
-        data.erase(data.bebin() + begin, data.begin() + begin + 9 * length);
+        _vertex_data.erase(_vertex_data.begin() + begin, _vertex_data.begin() + begin + 9 * length);
     };
 };
 
 
 class Object {
+protected:
     std::vector<Triangle> triangles;
     size_t begin;
 public:
-    Object() {}
+    Object() = default;
 
     Object(const std::vector<Triangle>& triangles) : triangles(triangles) {}
 
-    void draw(Buffer& buffer) const {
+    void draw(Buffer& buffer) {
         begin = buffer.add(triangles);
     }
 
@@ -83,6 +98,24 @@ public:
         for (auto& triangle : triangles) {
             triangle.move(shift);
         }
+    }
+};
+
+class Floor : public Object {
+    static constexpr float FIELD_SIZE = 5.0f;
+public:
+    Floor() {
+        auto t1 = Triangle({
+                   -FIELD_SIZE, 0.0f, -FIELD_SIZE,
+                   FIELD_SIZE, 0.0f,  FIELD_SIZE,
+                   FIELD_SIZE, 0.0f, -FIELD_SIZE,
+        });
+        auto t2 = Triangle({
+                   FIELD_SIZE, 0.0f,  FIELD_SIZE,
+                   -FIELD_SIZE, 0.0f, -FIELD_SIZE,
+                   -FIELD_SIZE, 0.0f,  FIELD_SIZE,
+        });
+        triangles = {t1, t2};
     }
 };
 
@@ -138,7 +171,7 @@ public:
                         sin(phi1) * sin(theta1) * radius,
                         cos(theta1) * radius
                         )
-                }))
+                }));
             }
         }
     }

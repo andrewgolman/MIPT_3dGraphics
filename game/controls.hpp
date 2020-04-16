@@ -1,16 +1,13 @@
-#ifndef CONTROLS_HPP
-#define CONTROLS_HPP
+#pragma once
 
 // Include GLFW
 #include <glfw3.h>
-extern GLFWwindow* window; // The "extern" keyword here is to access the variable "window" declared in tutorialXXX.cpp. This is a hack to keep the tutorials simple. Please avoid this.
 
 // Include GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
 namespace Controls {
-using namespace glm;
 
 glm::mat4 ViewMatrix;
 glm::mat4 ProjectionMatrix;
@@ -39,7 +36,7 @@ float mouseSpeed = 0.005f;
 
 
 
-void computeMatricesFromInputs(){
+void computeMatricesFromInputs(GLFWwindow* window){
 
     // glfwGetTime is called only once, the first time this function is called
     static double lastTime = glfwGetTime();
@@ -117,7 +114,5 @@ void computeMatricesFromInputs(){
     // For the next frame, the "last time" will be "now"
     lastTime = currentTime;
 }
-
 }  // namespace Controls
 
-#endif //CONTROLS_HPP

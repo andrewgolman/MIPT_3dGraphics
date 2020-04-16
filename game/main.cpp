@@ -2,6 +2,8 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
+#include <unordered_set>
+#include <unordered_map>
 
 
 // Include GLEW
@@ -9,21 +11,19 @@
 
 // Include GLFW
 #include <glfw3.h>
-GLFWwindow* window;  // todo move
 
 // Include GLM
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-using namespace glm;
 
 #include <common/shader.hpp>
+#include <controls.hpp>
 //#include <common/texture.hpp>
-#include <tutorial06_keyboard_and_mouse/controls.hpp>
 
-void initialize() {
+
+void initialize(GLFWwindow* window) {
     // Initialise GLFW
-    if( !glfwInit() )
-    {
+    if(!glfwInit()) {
         fprintf( stderr, "Failed to initialize GLFW\n" );
         getchar();
         exit(-1);
@@ -35,8 +35,8 @@ void initialize() {
 
 
     // Open a window and create its OpenGL context
-    window = glfwCreateWindow( 1024, 768, "GoChi", NULL, NULL);
-    if( window == NULL ){
+    window = glfwCreateWindow( 1024, 768, "Shooter", NULL, NULL);
+    if(window == NULL) {
         fprintf( stderr, "Failed to open GLFW window.\n" );
         getchar();
         glfwTerminate();
@@ -73,84 +73,78 @@ void initialize() {
     glEnable(GL_CULL_FACE);
 }
 
-int main()
-{
-    initialize();
 
-    // Create and compile our GLSL program from the shaders
-    GLuint ProgramID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader" );
+bool is_too_far(const Object& object) {
+    return false; //TODO
+}
 
-    // Get a handle for our "MVP" uniform
-    GLuint floorMatrixID = glGetUniformLocation(ProgramID, "MVP");
 
-    // Get a handle for our buffers
-    GLuint vertexPosition_modelspaceID = glGetAttribLocation(ProgramID, "vertexPosition_modelspace");
-    GLuint vertexColorID = glGetAttribLocation(ProgramID, "vertexColor");
+void move_objects(std::unordered_set<Object>& objects,
+    const std::unordered_map<glm::vec3>& speeds) {
+    for (auto& object : objects) {
+        object.move(speeds.get(object));
+        if (is_too_far(object)) {
+            object.undraw();
+            objects.erase(object);
+        }
+    }
+}
 
-    std::vector<GLfloat> g_vertex_buffer_data = {
-           -5.0f, 0.0f, -5.0f,
-            5.0f, 0.0f,  5.0f,
-            5.0f, 0.0f, -5.0f,
-            5.0f, 0.0f,  5.0f,
-           -5.0f, 0.0f, -5.0f,
-           -5.0f, 0.0f,  5.0f,
-    };
-    std::vector<GLfloat> g_color_buffer_data = {
-            0.5, 0.3, 0.1,
-            0.5, 0.3, 0.1,
-            0.5, 0.3, 0.1,
-            0.5, 0.3, 0.1,
-            0.5, 0.3, 0.1,
-            0.5, 0.3, 0.1,
-    };
 
-    // add objects to buffer
-    GLuint vertexbuffer;
-    glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, buffer.size() * 4, buffer.data(), GL_STATIC_DRAW);
+bool are_close(const Object& lhs, const Object& rhs) {
+    return false; //TODO
+}
 
-    GLuint colorbuffer;
-    glGenBuffers(1, &colorbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * 4, g_color_buffer_data.data(), GL_STATIC_DRAW);
 
-    vector<Object> fireballs;
-    vector<Object> targets;
-    map<Object, vec3> speeds;
+void create_target(std::unordered_set<Target>& targets,
+    std::unordered_map<glm::vec3>& speeds) {
+    target = Target();
+    target.move(glm::vec3(0, 0, 10));
+    targets.emplace_back(target);
+    speeds[target] = glm::vec3(0, 0, 0)
+}
+
+
+void create_fireball(std::unordered_set<Fireball>& fireballs,
+    std::unordered_map<glm::vec3>& speeds) {
+    fireball = Fireball(0.5, 100);
+    fireballs.emplace_back(fireball);
+    speeds[fireball] = glm::vec3(0, 0, 1);
+}
+
+
+bool is_space_pressed() {
+    return true; //TODO
+}
+
+
+int main() {
+    GLFWwindow* window;
+    initialize(window);
+
+    std::unordered_set<Fireball> fireballs;
+    std::unordered_set<Target> targets;
+    std::unordered_map<Object, glm::vec3> speeds;
     Buffer buffer;
-    // add floor
 
+    size_t iteration = 0;
     do {
-        for (o : fireballs) {
-            o.move(speeds.get(o));
-            if (is_too_far(o)) {
-                o.undraw();
-                fireballs.remove(o);
-            }
-        }
-        for (o : targets) {
-            o.move(speeds.get(o));
-            if (is_too_far(o)) {
-                o.undraw();
-                targets.remove(o);
-            }
-        }
+        move_objects(fireballs, speeds);
+        move_objects(targets, speeds);
 
-        if (rand()) {
-            create_target;
+        if (iteration % 1000 == 0) {
+            create_target(targets, speeds);
         }
-        if (space_pressed) {
-            create_fireball;
+        if (is_space_pressed()) {
+            create_fireball(fireballs, speeds);
         }
-        for (o : fireballs) {
-            for (q : targets) {
-                if isclose(o, q) {
-                    o.undraw()
-                    q.undraw()
-                    make_explosion(o, q);
-                    fireballs.remove(o);
-                    targets.remove(q);
+        for (auto& fireball : fireballs) {
+            for (auto& target : targets) {
+                if (are_close(fireball, target)) {
+                    fireball.undraw()
+                    target.undraw()
+                    fireballs.remove(fireball);
+                    targets.remove(target);
                 }
             }
         }
@@ -159,31 +153,15 @@ int main()
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // Get position from controls
-        Controls::computeMatricesFromInputs();
+        Controls::computeMatricesFromInputs(window);
         glm::mat4 ProjectionMatrix = Controls::getProjectionMatrix();
         glm::mat4 ViewMatrix = Controls::getViewMatrix();
         glm::mat4 ModelMatrix = glm::mat4(1.0);
         glm::mat4 MVP = ProjectionMatrix * ViewMatrix * ModelMatrix;
 
-        // Use main shader
-        glUseProgram(ProgramID);
-
         // Send our transformation to the currently bound shader,
         // in the "MVP" uniform
         glUniformMatrix4fv(floorMatrixID, 1, GL_FALSE, &MVP[0][0]);
-
-        // 1rst attribute buffer : vertices
-        glEnableVertexAttribArray(vertexPosition_modelspaceID);
-        glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glVertexAttribPointer(vertexPosition_modelspaceID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-        // 2nd attribute buffer : colors
-        glEnableVertexAttribArray(vertexColorID);
-        glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-        glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
-
-        // Draw the triangles
-        glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);
 
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);
@@ -191,18 +169,13 @@ int main()
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
+        ++iteration;
 
     } // Check if the ESC key was pressed or the window was closed
-    while( glfwGetKey(window, GLFW_KEY_ESCAPE ) != GLFW_PRESS &&
-           glfwWindowShouldClose(window) == 0 );
-
-    // Cleanup VBO and shader
-    glDeleteBuffers(1, &vertexbuffer);
-    glDeleteBuffers(1, &colorbuffer);
-    glDeleteProgram(ProgramID);
+    while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS
+        && glfwWindowShouldClose(window) == 0);
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();
-
     return 0;
 }

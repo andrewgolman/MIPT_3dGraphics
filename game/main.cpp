@@ -9,7 +9,7 @@
 
 // Include GLFW
 #include <glfw3.h>
-GLFWwindow* window;
+GLFWwindow* window;  // todo move
 
 // Include GLM
 #include <glm/glm.hpp>
@@ -20,14 +20,13 @@ using namespace glm;
 //#include <common/texture.hpp>
 #include <tutorial06_keyboard_and_mouse/controls.hpp>
 
-int main()
-{
+void initialize() {
     // Initialise GLFW
     if( !glfwInit() )
     {
         fprintf( stderr, "Failed to initialize GLFW\n" );
         getchar();
-        return -1;
+        exit(-1);
     }
 
     glfwWindowHint(GLFW_SAMPLES, 4);
@@ -72,6 +71,11 @@ int main()
 
     // Cull triangles which normal is not towards the camera
     glEnable(GL_CULL_FACE);
+}
+
+int main()
+{
+    initialize();
 
     // Create and compile our GLSL program from the shaders
     GLuint ProgramID = LoadShaders("TransformVertexShader.vertexshader", "ColorFragmentShader.fragmentshader" );
@@ -104,14 +108,53 @@ int main()
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, g_vertex_buffer_data.size() * 4, g_vertex_buffer_data.data(), GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, buffer.size() * 4, buffer.data(), GL_STATIC_DRAW);
 
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
     glBufferData(GL_ARRAY_BUFFER, g_color_buffer_data.size() * 4, g_color_buffer_data.data(), GL_STATIC_DRAW);
 
+    vector<Object> fireballs;
+    vector<Object> targets;
+    map<Object, vec3> speeds;
+    Buffer buffer;
+    // add floor
+
     do {
+        for (o : fireballs) {
+            o.move(speeds.get(o));
+            if (is_too_far(o)) {
+                o.undraw();
+                fireballs.remove(o);
+            }
+        }
+        for (o : targets) {
+            o.move(speeds.get(o));
+            if (is_too_far(o)) {
+                o.undraw();
+                targets.remove(o);
+            }
+        }
+
+        if (rand()) {
+            create_target;
+        }
+        if (space_pressed) {
+            create_fireball;
+        }
+        for (o : fireballs) {
+            for (q : targets) {
+                if isclose(o, q) {
+                    o.undraw()
+                    q.undraw()
+                    make_explosion(o, q);
+                    fireballs.remove(o);
+                    targets.remove(q);
+                }
+            }
+        }
+
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -140,7 +183,7 @@ int main()
         glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         // Draw the triangles
-        glDrawArrays(GL_TRIANGLES, 0, g_vertex_buffer_data.size() / 3);
+        glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);
 
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);

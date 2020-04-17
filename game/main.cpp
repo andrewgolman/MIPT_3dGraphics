@@ -92,9 +92,13 @@ std::uniform_real_distribution<float> uniform(0.0, 1.0);
 void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds, int cur_ts) {
     float x = uniform(generator) * 2 * 3.14;
     float h = uniform(generator);
-    glm::vec3 center(5 * sin(x), 0.5 + 3 * h, 5 * cos(x));
+    glm::vec3 center(5 * sin(x), 0.1 + 3 * h, 5 * cos(x));
     GLfloat radius = 0.1f + 0.05 * uniform(generator);
-    glm::vec3 angle(0, 0, 0);
+    glm::vec3 angle(
+            uniform(generator) * 3.14,
+            uniform(generator) * 3.14,
+            uniform(generator) * 3.14
+    );
     std::vector<GLfloat> color({
            uniform(generator),
            uniform(generator),

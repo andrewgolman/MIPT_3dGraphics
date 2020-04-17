@@ -41,7 +41,28 @@ public:
     }
 
     void turn(const glm::vec3& angle) {
+        GLfloat sin1 = sin(angle.x);
+        GLfloat cos1 = cos(angle.x);
+        GLfloat sin2 = sin(angle.y);
+        GLfloat cos2 = cos(angle.y);
+        GLfloat sin3 = sin(angle.z);
+        GLfloat cos3 = cos(angle.z);
 
+        for (auto& point : points) {
+            glm::vec3 new_point;
+            new_point.x = point.x * cos1 - point.y * sin1;
+            new_point.y = point.x * sin1 + point.y * cos1;
+            new_point.z = point.z;
+            point = new_point;
+            new_point.x = point.x * cos2 - point.z * sin2;
+            new_point.z = point.x * sin2 + point.z * cos2;
+            new_point.y = point.y;
+            point = new_point;
+            new_point.x = point.x * cos3 - point.y * sin3;
+            new_point.y = point.x * sin3 + point.y * cos3;
+            new_point.z = point.z;
+            point = new_point;
+        }
     }
 
     const std::vector<glm::vec3>& get_points() const {
@@ -53,6 +74,7 @@ public:
 class Buffer {
     std::vector<GLfloat> _vertex_data;
     std::vector<GLfloat> _color_data;
+
 public:
     Buffer() {}
 

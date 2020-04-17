@@ -99,13 +99,15 @@ protected:
     std::vector<Triangle> triangles;
     std::vector<GLfloat> colors;
 
-    Object() = default;
+    Object() : center(0, 0, 0) {}
 public:
+    glm::vec3 center;
     void draw(Buffer& buffer) const {
         buffer.add(triangles, colors);
     }
 
     void move(const glm::vec3& shift) {
+        center += shift;
         for (auto& triangle : triangles) {
             triangle.move(shift);
         }
@@ -113,7 +115,7 @@ public:
 };
 
 class Floor : public Object {
-    static constexpr GLfloat FIELD_SIZE = 5.0f;
+    static constexpr GLfloat FIELD_SIZE = 10.0f;
 public:
     Floor() {
         auto t1 = Triangle({
@@ -134,7 +136,10 @@ public:
 
 class Fireball : public Object {
 public:
-    Fireball(double radius, size_t triangles_count, const std::vector<GLfloat>& colors={0.0, 0.0, 0.7}) {
+    GLfloat radius;
+
+    Fireball(GLfloat radius, size_t triangles_count, const std::vector<GLfloat>& colors={0.0, 0.0, 0.7})
+    : radius(radius) {
         this->colors = colors;
         const size_t squares_count = triangles_count / 2;
         for (size_t i = 0; i < squares_count; ++i) {
@@ -229,17 +234,26 @@ const std::vector<Triangle> CUBE_TRIANGLES = {
 
 
 class Target : public Object {
+    int lifetime;
 public:
-    Target(const glm::vec3& center,
+    GLfloat radius;
+
+    Target(const glm::vec3& icenter,
             GLfloat radius,
             const glm::vec3& angle,
-            const std::vector<GLfloat>& icolor) {
+            const std::vector<GLfloat>& icolor,
+            int lifetime
+            ) : lifetime(lifetime), radius(radius) {
         triangles = std::vector<Triangle>(CUBE_TRIANGLES);
         colors = icolor;
+        center = icenter;
         for (auto& t : triangles) {
             t.stretch(radius);
             t.turn(angle);
-            t.move(center);
+            t.move(icenter);
         }
+    }
+    bool expired(int timestamp) const {
+        return timestamp >= lifetime;
     }
 };

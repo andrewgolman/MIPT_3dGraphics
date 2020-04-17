@@ -5,6 +5,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <random>
+#include <algorithm>
 #include <iostream>  // for debugging
 
 // Include GLEW
@@ -17,10 +18,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-#include "shader.hpp"
 #include "controls.hpp"
 #include "objects.hpp"
-//#include <common/texture.hpp>
+#include "common/shader.hpp"
 
 
 GLFWwindow* initialize() {
@@ -77,40 +77,44 @@ GLFWwindow* initialize() {
 
 
 bool is_too_far(const Object& object) {
-    return false; //TODO
+    return glm::distance(Controls::position, object.center) > 10.0f;
 }
 
-
-bool are_close(const Object& lhs, const Object& rhs) {
-    return false; //TODO
+template <typename U, typename V>
+bool are_close(const U& lhs, const V& rhs) {
+    return glm::distance(lhs.center, rhs.center) < lhs.radius + rhs.radius;
 }
 
 
 std::default_random_engine generator;
-std::uniform_real_distribution<float> distribution(0.0,1.0);
+std::uniform_real_distribution<float> uniform(0.0, 1.0);
 
-void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds) {
-    float x = distribution(generator) * 2 * 3.14;
-    float h = distribution(generator);
-    glm::vec3 center(5 * sin(x), 2 + 2 * h, 5 * cos(x));
-    GLfloat radius = 0.2f + 0.05 * distribution(generator);
+void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds, int cur_ts) {
+    float x = uniform(generator) * 2 * 3.14;
+    float h = uniform(generator);
+    glm::vec3 center(5 * sin(x), 0.5 + 3 * h, 5 * cos(x));
+    GLfloat radius = 1.0f + 0.05 * uniform(generator);
     glm::vec3 angle(0, 0, 0);
     std::vector<GLfloat> color({
-        distribution(generator),
-        distribution(generator),
-        distribution(generator)});
-    targets.emplace_back(center + Controls::position * 0.5f, radius, angle, color);
-    speeds.emplace_back(1, 1, 1);
+           uniform(generator),
+           uniform(generator),
+           uniform(generator)
+    });
+    float brightness = std::accumulate(color.begin(), color.end(), 0.f);
+    targets.emplace_back(center + Controls::position * 0.5f, radius, angle, color,
+            cur_ts + brightness * 100);
+    speeds.emplace_back(
+            uniform(generator) / 100,
+            uniform(generator) / 100,
+            uniform(generator) / 100
+            );
 }
 
-void remove_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds, int id=0) {
-    if (distribution(generator) < 0.01) {
-        targets.clear();
-    } else {
-        if (targets.size()) {
-            targets.erase(targets.begin() + id);
-            speeds.erase(speeds.begin() + id);
-        }
+template <typename T>
+void remove_object(std::vector<T>& objects, std::vector<glm::vec3>& speeds, int id=0) {
+    if (objects.size() > id) {
+        objects.erase(objects.begin() + id);
+        speeds.erase(speeds.begin() + id);
     }
 }
 
@@ -122,13 +126,8 @@ void create_fireball(std::vector<Fireball>& fireballs, std::vector<glm::vec3>& s
 }
 
 
-bool is_space_pressed(GLFWwindow* window) {
-    return glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
-}
-
-
 bool fireball_is_available(size_t iteration, size_t last_shoot_time) {
-    return  (iteration - last_shoot_time > 20);
+    return (iteration - last_shoot_time > 20);
 }
 
 
@@ -165,11 +164,28 @@ int main() {
     do {
         buffer.clear();
 
-        if (distribution(generator) < 0.1) {
-            create_target(targets, target_speeds);
+        // create targets
+        if (uniform(generator) < 0.3) {  // 0.03
+            create_target(targets, target_speeds, iteration);
         }
-        if (iteration > 100 && distribution(generator) < 0.1) {
-            remove_target(targets, target_speeds);
+
+        // remove objects that are too far
+        for (size_t i = 0; i < targets.size(); ++i) {
+            if (targets[i].expired(iteration)) {
+                remove_object(targets, target_speeds, i);
+            }
+        }
+
+        // remove collided objects
+        for (size_t i = 0; i < targets.size(); ++i) {
+            for (size_t j = 0; j < fireballs.size(); ++j) {
+                if (are_close(targets[i], fireballs[j])) {
+                    std::cout << "COLLIDE" << std::endl;
+                    remove_object(targets, target_speeds, i);
+                    remove_object(fireballs, fireball_speeds, j);
+                    break;
+                }
+            }
         }
 
         if (Controls::isSpacePressed(window) && fireball_is_available(iteration, last_shoot_time)) {
@@ -187,11 +203,6 @@ int main() {
         for (size_t i = 0; i < fireballs.size(); ++i) {
             fireballs[i].move(fireball_speeds[i]);
             fireballs[i].draw(buffer);
-        }
-
-        floor.draw(buffer);
-        for (const auto& fireball : fireballs) {
-            fireball.draw(buffer);
         }
 
         // Clear the screen
@@ -222,6 +233,7 @@ int main() {
         glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);
+
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);
         // Swap buffers

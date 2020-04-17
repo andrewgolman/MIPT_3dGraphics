@@ -81,13 +81,6 @@ bool is_too_far(const Object& object) {
 }
 
 
-void move_objects(std::vector<Fireball>& objects, const std::vector<glm::vec3>& speeds) {
-    for (size_t i = 0; i < objects.size(); ++i) {
-        objects[i].move(speeds[i]);
-    }
-}
-
-
 bool are_close(const Object& lhs, const Object& rhs) {
     return false; //TODO
 }
@@ -156,7 +149,7 @@ int main() {
     std::vector<Target> targets;
     std::vector<glm::vec3> target_speeds;
     std::vector<Fireball> fireballs;
-    std::vector<glm::vec3> speeds;
+    std::vector<glm::vec3> fireball_speeds;
 
     Buffer buffer;
     Floor floor;
@@ -178,17 +171,22 @@ int main() {
         if (iteration > 100 && distribution(generator) < 0.1) {
             remove_target(targets, target_speeds);
         }
-        move_objects(fireballs, speeds);
 
         if (Controls::isSpacePressed(window) && fireball_is_available(iteration, last_shoot_time)) {
             last_shoot_time = iteration;
             std::cout << "Fire!\n";
-            create_fireball(fireballs, speeds, Controls::direction);
+            create_fireball(fireballs, fireball_speeds, Controls::direction);
         }
+
         floor.draw(buffer);
         for (size_t i = 0; i < targets.size(); ++i) {
             targets[i].move(target_speeds[i]);
             targets[i].draw(buffer);
+        }
+
+        for (size_t i = 0; i < fireballs.size(); ++i) {
+            fireballs[i].move(fireball_speeds[i]);
+            fireballs[i].draw(buffer);
         }
 
         floor.draw(buffer);

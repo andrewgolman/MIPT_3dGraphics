@@ -83,11 +83,6 @@ public:
                 _vertex_data.emplace_back(point.y);
                 _vertex_data.emplace_back(point.z);
             }
-            for (int i = 0; i < 3; ++i) {
-                for (auto comp : colors) {
-                    _color_data.emplace_back(comp);
-                }
-            }
 
             for (int i = 0; i < 3; ++i) {
                 for (auto comp : colors) {

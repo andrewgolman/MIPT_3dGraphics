@@ -35,6 +35,9 @@ float speed = 3.0f; // 3 units / second
 float mouseSpeed = 0.005f;
 
 
+bool isSpacePressed(GLFWwindow* window) {
+    return glfwGetKey(window, GLFW_KEY_SPACE ) == GLFW_PRESS;
+}
 
 void computeMatricesFromInputs(GLFWwindow* window){
 

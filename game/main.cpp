@@ -101,26 +101,27 @@ bool are_close(const Object& lhs, const Object& rhs) {
 std::default_random_engine generator;
 std::uniform_real_distribution<float> distribution(0.0,1.0);
 
-void create_target(std::vector<Target>& targets) {
+void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds) {
     float x = distribution(generator) * 2 * 3.14;
     float h = distribution(generator);
     glm::vec3 center(5 * sin(x), 2 + 2 * h, 5 * cos(x));
-    GLfloat radius = 0.2f;
+    GLfloat radius = 0.2f + 0.05 * distribution(generator);
     glm::vec3 angle(0, 0, 0);
     std::vector<GLfloat> color({
         distribution(generator),
         distribution(generator),
         distribution(generator)});
     targets.emplace_back(center + Controls::position * 0.5f, radius, angle, color);
-//    speeds[target] = glm::vec3(0, 0, 0)
+    speeds.emplace_back(1, 1, 1);
 }
 
-void remove_target(std::vector<Target>& targets) {
+void remove_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds, int id=0) {
     if (distribution(generator) < 0.01) {
-//        targets.clear();
+        targets.clear();
     } else {
         if (targets.size()) {
-            targets.erase(targets.begin());
+            targets.erase(targets.begin() + id);
+            speeds.erase(speeds.begin() + id);
         }
     }
 }
@@ -132,12 +133,6 @@ void create_fireball(std::unordered_set<Fireball>& fireballs,
 //    fireballs.emplace_back(fireball);
 //    speeds[fireball] = glm::vec3(0, 0, 1);
 }
-
-
-bool is_space_pressed() {
-    return true; //TODO
-}
-
 
 int main() {
     GLFWwindow* window = initialize();
@@ -154,17 +149,8 @@ int main() {
 
 //    std::unordered_set<Fireball> fireballs;
     std::vector<Target> targets;
-//    std::unordered_map<Object, glm::vec3> speeds;
+    std::vector<glm::vec3> target_speeds;
     Floor floor;
-
-//    std::vector<GLfloat> g_color_buffer_data;
-//    for (int i = 0; i < 10000; ++i) {
-//        if (i % 3 == 2) {
-//            g_color_buffer_data.emplace_back(0.2f);
-//        } else {
-//            g_color_buffer_data.emplace_back(0.5f);
-//        }
-//    }
 
     Buffer buffer;
     GLuint vertexbuffer;
@@ -183,18 +169,19 @@ int main() {
 //        move_objects(fireballs, speeds);
 //        move_objects(targets, speeds);
 //
-        if (distribution(generator) < 0.05) {
-            create_target(targets);
+        if (distribution(generator) < 0.1) {
+            create_target(targets, target_speeds);
         }
-        if (iteration > 100 && distribution(generator) < 0.05) {
-            remove_target(targets);
+        if (iteration > 100 && distribution(generator) < 0.1) {
+            remove_target(targets, target_speeds);
         }
-        if (is_space_pressed()) {
+        if (Controls::isSpacePressed(window)) {
 //            create_fireball(fireballs, speeds);
         }
         floor.draw(buffer);
-        for (auto& target : targets) {
-                target.draw(buffer);
+        for (size_t i = 0; i < targets.size(); ++i) {
+            targets[i].move(target_speeds[i]);
+            targets[i].draw(buffer);
         }
 //        for (auto& fireball : fireballs) {
 //            for (auto& target : targets) {

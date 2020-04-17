@@ -99,18 +99,30 @@ bool are_close(const Object& lhs, const Object& rhs) {
 
 
 std::default_random_engine generator;
-std::uniform_real_distribution<float> distribution(0.0,3.1415);
+std::uniform_real_distribution<float> distribution(0.0,1.0);
 
 void create_target(std::vector<Target>& targets) {
-    float x = distribution(generator);
-    glm::vec3 center(5 * sin(x), 2, 5 * cos(x));
+    float x = distribution(generator) * 2 * 3.14;
+    float h = distribution(generator);
+    glm::vec3 center(5 * sin(x), 2 + 2 * h, 5 * cos(x));
     GLfloat radius = 0.2f;
     glm::vec3 angle(0, 0, 0);
-    std::vector<GLfloat> color({0, 0, 0});
-
-    Target target(center, radius, angle, color);
-    targets.emplace_back(target);
+    std::vector<GLfloat> color({
+        distribution(generator),
+        distribution(generator),
+        distribution(generator)});
+    targets.emplace_back(center + Controls::position * 0.5f, radius, angle, color);
 //    speeds[target] = glm::vec3(0, 0, 0)
+}
+
+void remove_target(std::vector<Target>& targets) {
+    if (distribution(generator) < 0.01) {
+//        targets.clear();
+    } else {
+        if (targets.size()) {
+            targets.erase(targets.begin());
+        }
+    }
 }
 
 
@@ -145,25 +157,25 @@ int main() {
 //    std::unordered_map<Object, glm::vec3> speeds;
     Floor floor;
 
-    std::vector<GLfloat> g_color_buffer_data;
-    for (int i = 0; i < 10000; ++i) {
-        if (i % 3 == 2) {
-            g_color_buffer_data.emplace_back(0.2f);
-        } else {
-            g_color_buffer_data.emplace_back(0.5f);
-        }
-    }
+//    std::vector<GLfloat> g_color_buffer_data;
+//    for (int i = 0; i < 10000; ++i) {
+//        if (i % 3 == 2) {
+//            g_color_buffer_data.emplace_back(0.2f);
+//        } else {
+//            g_color_buffer_data.emplace_back(0.5f);
+//        }
+//    }
 
     Buffer buffer;
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), buffer.vertex_data(), GL_STATIC_DRAW);
+//    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
+//    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), buffer.vertex_data(), GL_STATIC_DRAW);
 
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
-    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
+//    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
+//    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
 
     size_t iteration = 0;
     do {
@@ -171,8 +183,11 @@ int main() {
 //        move_objects(fireballs, speeds);
 //        move_objects(targets, speeds);
 //
-        if (iteration % 100 == 50) {
+        if (distribution(generator) < 0.05) {
             create_target(targets);
+        }
+        if (iteration > 100 && distribution(generator) < 0.05) {
+            remove_target(targets);
         }
         if (is_space_pressed()) {
 //            create_fireball(fireballs, speeds);
@@ -217,7 +232,7 @@ int main() {
         // 2nd attribute buffer : colors
         glEnableVertexAttribArray(vertexColorID);
         glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), buffer.color_data(), GL_STATIC_DRAW);
         glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);

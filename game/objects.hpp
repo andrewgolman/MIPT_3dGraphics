@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include <stdexcept>
+#include <iostream>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -54,11 +55,13 @@ public:
 
 class Buffer {
     std::vector<GLfloat> _vertex_data;
+    std::vector<GLfloat> _color_data;
 public:
     Buffer() {}
 
     void clear() {
         _vertex_data.clear();
+        _color_data.clear();
     }
 
     const void* vertex_data() {
@@ -66,53 +69,46 @@ public:
     }
 
     const void* color_data() {
-        throw;
+        return _color_data.data();
     }
 
     size_t size() const {
+        assert(_vertex_data.size() == _color_data.size());
         return _vertex_data.size();
     }
 
-    size_t add(const std::vector<Triangle>& triangles) {
+    size_t add(const std::vector<Triangle>& triangles, const std::vector<GLfloat>& color) {
+        assert(color.size() == 3);
         size_t begin = _vertex_data.size();
         for (auto& triangle: triangles) {
             for (const auto& point : triangle.get_points()) {
-                    _vertex_data.emplace_back(point.x);
-                    _vertex_data.emplace_back(point.y);
-                    _vertex_data.emplace_back(point.z);
+                _vertex_data.emplace_back(point.x);
+                _vertex_data.emplace_back(point.y);
+                _vertex_data.emplace_back(point.z);
+            }
+            for (int i = 0; i < 3; ++i) {
+                for (auto comp : color) {
+                    _color_data.emplace_back(comp);
+                }
             }
         }
         return begin;
     }
-
-    size_t add_points(const std::vector<GLfloat>& points) {
-        size_t begin = _vertex_data.size();
-        for (const auto& point : points) {
-                _vertex_data.emplace_back(point);
-        }
-        return begin;
-    }
-
-    void remove(size_t begin, size_t length) {
-        _vertex_data.erase(_vertex_data.begin() + begin, _vertex_data.begin() + begin + 9 * length);
-    };
 };
 
 
 class Object {
 protected:
     std::vector<Triangle> triangles;
+    std::vector<GLfloat> color;
     size_t begin;
     Object() = default;
 public:
-    Object(const std::vector<Triangle>& triangles) : triangles(triangles) {}
+    Object(const std::vector<Triangle>& triangles, const std::vector<GLfloat>& color)
+            : triangles(triangles), color(color) {}
 
     void draw(Buffer& buffer) {
-        begin = buffer.add(triangles);
-    }
-
-    void undraw(Buffer& buffer) const {
-        buffer.remove(begin, triangles.size());
+        begin = buffer.add(triangles, color);
     }
 
     void move(const glm::vec3& shift) {
@@ -137,6 +133,7 @@ public:
                    -FIELD_SIZE, 0.0f,  FIELD_SIZE,
         });
         triangles = {t1, t2};
+        color = {0.7, 0.5, 0.2};
     }
 };
 
@@ -243,8 +240,9 @@ public:
     Target(const glm::vec3& center,
             GLfloat radius,
             const glm::vec3& angle,
-            const std::vector<GLfloat>& color) {
+            const std::vector<GLfloat>& icolor) {
         triangles = std::vector<Triangle>(CUBE_TRIANGLES);
+        color = icolor;
         for (auto& t : triangles) {
             t.stretch(radius);
             t.turn(angle);

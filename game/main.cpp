@@ -81,15 +81,10 @@ bool is_too_far(const Object& object) {
 }
 
 
-void move_objects(std::unordered_set<Object>& objects,
-                  const std::unordered_map<int, glm::vec3>& speeds) {
-//    for (auto& object : objects) {
-//        object.move(speeds.get(object));
-//        if (is_too_far(object)) {
-//            object.undraw();
-//            objects.erase(object);
-//        }
-//    }
+void move_objects(std::vector<Fireball>& objects, const std::vector<glm::vec3>& speeds) {
+    for (size_t i = 0; i < objects.size(); ++i) {
+        objects[i].move(speeds[i]);
+    }
 }
 
 
@@ -127,12 +122,22 @@ void remove_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds,
 }
 
 
-void create_fireball(std::unordered_set<Fireball>& fireballs,
-                     std::unordered_map<int, glm::vec3>& speeds) {
-//    fireball = Fireball(0.5, 100);
-//    fireballs.emplace_back(fireball);
-//    speeds[fireball] = glm::vec3(0, 0, 1);
+void create_fireball(std::vector<Fireball>& fireballs, std::vector<glm::vec3>& speeds,
+    const glm::vec3& direction) {
+    fireballs.emplace_back(Fireball(0.2, 20));
+    speeds.emplace_back(direction);
 }
+
+
+bool is_space_pressed(GLFWwindow* window) {
+    return glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS;
+}
+
+
+bool fireball_is_available(size_t iteration, size_t last_shoot_time) {
+    return  (iteration - last_shoot_time > 20);
+}
+
 
 int main() {
     GLFWwindow* window = initialize();
@@ -147,53 +152,49 @@ int main() {
     GLuint vertexPosition_modelspaceID = glGetAttribLocation(ProgramID, "vertexPosition_modelspace");
     GLuint vertexColorID = glGetAttribLocation(ProgramID, "vertexColor");
 
-//    std::unordered_set<Fireball> fireballs;
+
     std::vector<Target> targets;
     std::vector<glm::vec3> target_speeds;
-    Floor floor;
+    std::vector<Fireball> fireballs;
+    std::vector<glm::vec3> speeds;
 
     Buffer buffer;
+    Floor floor;
+
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
-//    glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-//    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), buffer.vertex_data(), GL_STATIC_DRAW);
 
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
-//    glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-//    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
 
     size_t iteration = 0;
+    size_t last_shoot_time = 0;
     do {
         buffer.clear();
-//        move_objects(fireballs, speeds);
-//        move_objects(targets, speeds);
-//
+
         if (distribution(generator) < 0.1) {
             create_target(targets, target_speeds);
         }
         if (iteration > 100 && distribution(generator) < 0.1) {
             remove_target(targets, target_speeds);
         }
-        if (Controls::isSpacePressed(window)) {
-//            create_fireball(fireballs, speeds);
+        move_objects(fireballs, speeds);
+
+        if (Controls::isSpacePressed(window) && fireball_is_available(iteration, last_shoot_time)) {
+            last_shoot_time = iteration;
+            std::cout << "Fire!\n";
+            create_fireball(fireballs, speeds, Controls::direction);
         }
         floor.draw(buffer);
         for (size_t i = 0; i < targets.size(); ++i) {
             targets[i].move(target_speeds[i]);
             targets[i].draw(buffer);
         }
-//        for (auto& fireball : fireballs) {
-//            for (auto& target : targets) {
-//                if (are_close(fireball, target)) {
-//                    fireball.undraw();
-//                    target.undraw();
-//                    fireballs.remove(fireball);
-//                    targets.remove(target);
-//                }
-//            }
-//        }
 
+        floor.draw(buffer);
+        for (const auto& fireball : fireballs) {
+            fireball.draw(buffer);
+        }
 
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -234,6 +235,13 @@ int main() {
     } // Check if the ESC key was pressed or the window was closed
     while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS
           && glfwWindowShouldClose(window) == 0);
+
+    // Cleanup VBO and shader
+    glDeleteBuffers(1, &vertexbuffer);
+    glDeleteBuffers(1, &colorbuffer);
+    glDeleteProgram(ProgramID);
+    //glDeleteTextures(1, &Texture);
+    //glDeleteVertexArrays(1, &VertexArrayID);
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();

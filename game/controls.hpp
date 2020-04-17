@@ -24,6 +24,7 @@ glm::mat4 getProjectionMatrix(){
 glm::vec3 position = glm::vec3( 0, 2, 0 );
 float direction_up = 0;
 float direction_right = 0;
+glm::vec3 direction = glm::vec3(0, 0, 1);
 // Initial horizontal angle : toward -Z
 float horizontalAngle = 3.14f;
 // Initial vertical angle : none
@@ -96,7 +97,7 @@ void computeMatricesFromInputs(GLFWwindow* window){
         direction_right += 1;
     }
 
-    glm::vec3 direction(
+    direction = glm::vec3(
             sin(direction_right / C),
             direction_up / C,
             cos(direction_right / C)

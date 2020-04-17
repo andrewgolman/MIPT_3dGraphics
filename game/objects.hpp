@@ -12,7 +12,7 @@ class Triangle {
     std::vector<glm::vec3> points;
 
 public:
-    Triangle(const std::vector<float>& data) {
+    Triangle(const std::vector<GLfloat>& data) {
         assert(data.size() == 9);
         for (size_t i = 0; i < 3; ++i) {
             auto iter = data.begin() + 3 * i;
@@ -36,6 +36,16 @@ public:
         }
     }
 
+    void stretch(GLfloat alpha) {
+        for (auto& point : points) {
+            point *= alpha;
+        }
+    }
+
+    void turn(const glm::vec3& angle) {
+
+    }
+
     const std::vector<glm::vec3>& get_points() const {
         return points;
     }
@@ -46,6 +56,10 @@ class Buffer {
     std::vector<GLfloat> _vertex_data;
 public:
     Buffer() {}
+
+    void clear() {
+        _vertex_data.clear();
+    }
 
     const void* vertex_data() {
         return _vertex_data.data();
@@ -71,6 +85,14 @@ public:
         return begin;
     }
 
+    size_t add_points(const std::vector<GLfloat>& points) {
+        size_t begin = _vertex_data.size();
+        for (const auto& point : points) {
+                _vertex_data.emplace_back(point);
+        }
+        return begin;
+    }
+
     void remove(size_t begin, size_t length) {
         _vertex_data.erase(_vertex_data.begin() + begin, _vertex_data.begin() + begin + 9 * length);
     };
@@ -81,9 +103,8 @@ class Object {
 protected:
     std::vector<Triangle> triangles;
     size_t begin;
-public:
     Object() = default;
-
+public:
     Object(const std::vector<Triangle>& triangles) : triangles(triangles) {}
 
     void draw(Buffer& buffer) {
@@ -102,7 +123,7 @@ public:
 };
 
 class Floor : public Object {
-    static constexpr float FIELD_SIZE = 5.0f;
+    static constexpr GLfloat FIELD_SIZE = 5.0f;
 public:
     Floor() {
         auto t1 = Triangle({
@@ -177,8 +198,59 @@ public:
     }
 };
 
+const std::vector<Triangle> CUBE_TRIANGLES = {
+        Triangle({-1.0f, -1.0f,-1.0f,
+        -1.0f,-1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f}),
+        Triangle({1.0f, 1.0f,-1.0f,
+        -1.0f,-1.0f,-1.0f,
+        -1.0f, 1.0f,-1.0f}),
+        Triangle({1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f,
+        1.0f,-1.0f,-1.0f}),
+        Triangle({1.0f, 1.0f,-1.0f,
+        1.0f,-1.0f,-1.0f,
+        -1.0f,-1.0f,-1.0f}),
+        Triangle({-1.0f,-1.0f,-1.0f,
+        -1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f,-1.0f}),
+        Triangle({1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,
+        -1.0f,-1.0f,-1.0f}),
+        Triangle({-1.0f, 1.0f, 1.0f,
+        -1.0f,-1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f}),
+        Triangle({1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f,-1.0f,
+        1.0f, 1.0f,-1.0f}),
+        Triangle({1.0f,-1.0f,-1.0f,
+        1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f}),
+        Triangle({1.0f, 1.0f, 1.0f,
+        1.0f, 1.0f,-1.0f,
+        -1.0f, 1.0f,-1.0f}),
+        Triangle({1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f,-1.0f,
+        -1.0f, 1.0f, 1.0f}),
+        Triangle({1.0f, 1.0f, 1.0f,
+        -1.0f, 1.0f, 1.0f,
+        1.0f,-1.0f, 1.0f})
+};
+
 
 class Target : public Object {
+public:
+    Target(const glm::vec3& center,
+            GLfloat radius,
+            const glm::vec3& angle,
+            const std::vector<GLfloat>& color) {
+        triangles = std::vector<Triangle>(CUBE_TRIANGLES);
+        for (auto& t : triangles) {
+            t.stretch(radius);
+            t.turn(angle);
+            t.move(center);
+        }
+    }
 };
 
 #endif //OBJECTS_HPP

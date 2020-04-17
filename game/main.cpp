@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_set>
 #include <unordered_map>
+#include <random>
 #include <iostream>  // for debugging
 
 // Include GLEW
@@ -97,11 +98,18 @@ bool are_close(const Object& lhs, const Object& rhs) {
 }
 
 
-void create_target(std::unordered_set<Target>& targets,
-                   std::unordered_map<int, glm::vec3>& speeds) {
-//    target = Target();
-//    target.move(glm::vec3(0, 0, 10));
-//    targets.emplace_back(target);
+std::default_random_engine generator;
+std::uniform_real_distribution<float> distribution(0.0,3.1415);
+
+void create_target(std::vector<Target>& targets) {
+    float x = distribution(generator);
+    glm::vec3 center(5 * sin(x), 2, 5 * cos(x));
+    GLfloat radius = 0.2f;
+    glm::vec3 angle(0, 0, 0);
+    std::vector<GLfloat> color({0, 0, 0});
+
+    Target target(center, radius, angle, color);
+    targets.emplace_back(target);
 //    speeds[target] = glm::vec3(0, 0, 0)
 }
 
@@ -133,21 +141,20 @@ int main() {
     GLuint vertexColorID = glGetAttribLocation(ProgramID, "vertexColor");
 
 //    std::unordered_set<Fireball> fireballs;
-//    std::unordered_set<Target> targets;
+    std::vector<Target> targets;
 //    std::unordered_map<Object, glm::vec3> speeds;
-    Buffer buffer;
     Floor floor;
-    floor.draw(buffer);
 
-    static const GLfloat g_color_buffer_data[] = {
-            0.5, 0.5, 0.2,
-            0.5, 0.5, 0.2,
-            0.5, 0.5, 0.2,
-            0.5, 0.5, 0.2,
-            0.5, 0.5, 0.2,
-            0.5, 0.5, 0.2,
-    };
+    std::vector<GLfloat> g_color_buffer_data;
+    for (int i = 0; i < 10000; ++i) {
+        if (i % 3 == 2) {
+            g_color_buffer_data.emplace_back(0.2f);
+        } else {
+            g_color_buffer_data.emplace_back(0.5f);
+        }
+    }
 
+    Buffer buffer;
     GLuint vertexbuffer;
     glGenBuffers(1, &vertexbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -156,18 +163,23 @@ int main() {
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
     glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
 
     size_t iteration = 0;
     do {
+        buffer.clear();
 //        move_objects(fireballs, speeds);
 //        move_objects(targets, speeds);
 //
-        if (iteration % 1000 == 0) {
-//            create_target(targets, speeds);
+        if (iteration % 100 == 50) {
+            create_target(targets);
         }
         if (is_space_pressed()) {
 //            create_fireball(fireballs, speeds);
+        }
+        floor.draw(buffer);
+        for (auto& target : targets) {
+                target.draw(buffer);
         }
 //        for (auto& fireball : fireballs) {
 //            for (auto& target : targets) {
@@ -179,6 +191,7 @@ int main() {
 //                }
 //            }
 //        }
+
 
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -198,22 +211,23 @@ int main() {
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(vertexPosition_modelspaceID);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
-        glBufferData(GL_ARRAY_BUFFER, 4 * buffer.size(), buffer.vertex_data(), GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), buffer.vertex_data(), GL_STATIC_DRAW);
         glVertexAttribPointer(vertexPosition_modelspaceID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         // 2nd attribute buffer : colors
         glEnableVertexAttribArray(vertexColorID);
         glBindBuffer(GL_ARRAY_BUFFER, colorbuffer);
-        glBufferData(GL_ARRAY_BUFFER, sizeof(g_color_buffer_data), g_color_buffer_data, GL_STATIC_DRAW);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), g_color_buffer_data.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-        glDrawArrays(GL_TRIANGLES, 0, 8 * 3);
+        glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
         ++iteration;
+        // todo count time not iterations
 
     } // Check if the ESC key was pressed or the window was closed
     while(glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS

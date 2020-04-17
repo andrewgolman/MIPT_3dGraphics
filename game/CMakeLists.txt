@@ -59,8 +59,8 @@ add_executable(game
         main.cpp
         controls.hpp
         objects.hpp
-        shader.hpp
-        shader.cpp
+        common/shader.hpp
+        common/shader.cpp
         )
 target_link_libraries(game
         ${ALL_LIBS}

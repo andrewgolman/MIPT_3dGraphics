@@ -213,6 +213,14 @@ int main() {
             glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
         }
 
+        // apply gravity
+        for (size_t i = 0; i < target_speeds.size(); ++i) {
+            target_speeds[i].y -= 0.00005;
+        }
+        for (size_t i = 0; i < fireball_speeds.size(); ++i) {
+            fireball_speeds[i].y -= 0.005;
+        }
+
 
         if (Controls::isSpacePressed(window) && fireball_is_available(iteration, last_shoot_time)) {
             last_shoot_time = iteration;

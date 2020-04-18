@@ -20,6 +20,7 @@
 
 #include "controls.hpp"
 #include "objects.hpp"
+#include "common/texture.hpp"
 #include "common/shader.hpp"
 
 
@@ -125,7 +126,9 @@ void remove_object(std::vector<T>& objects, std::vector<glm::vec3>& speeds, int 
 
 void create_fireball(std::vector<Fireball>& fireballs, std::vector<glm::vec3>& speeds,
     const glm::vec3& direction) {
-    fireballs.emplace_back(Fireball(0.2, 20));
+    auto fireball = Fireball(1., 20);
+    fireball.move(Controls::position);
+    fireballs.emplace_back(fireball);
     speeds.emplace_back(direction);
 }
 
@@ -147,6 +150,7 @@ int main() {
 //     Get a handle for our buffers
     GLuint vertexPosition_modelspaceID = glGetAttribLocation(ProgramID, "vertexPosition_modelspace");
     GLuint vertexColorID = glGetAttribLocation(ProgramID, "vertexColor");
+    GLuint vertexUVID = glGetAttribLocation(ProgramID, "vertexUV");
 
 
     std::vector<Target> targets;
@@ -162,6 +166,16 @@ int main() {
 
     GLuint colorbuffer;
     glGenBuffers(1, &colorbuffer);
+
+    GLuint uvbuffer;
+    glGenBuffers(1, &uvbuffer);
+
+    // Load the texture using any two methods
+    //GLuint Texture = loadBMP_custom("uvtemplate.bmp");
+    GLuint Texture = loadBMP_custom("fireearth.bmp");
+
+    // Get a handle for our "myTextureSampler" uniform
+    GLuint TextureID  = glGetUniformLocation(ProgramID, "myTextureSampler");
 
     size_t iteration = 0;
     size_t last_shoot_time = 0;
@@ -240,6 +254,11 @@ int main() {
         // in the "MVP" uniform
         glUniformMatrix4fv(MatrixID, 1, GL_FALSE, &MVP[0][0]);
 
+
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, Texture);
+        glUniform1i(TextureID, 0);
+
         // 1rst attribute buffer : vertices
         glEnableVertexAttribArray(vertexPosition_modelspaceID);
         glBindBuffer(GL_ARRAY_BUFFER, vertexbuffer);
@@ -252,10 +271,17 @@ int main() {
         glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.size(), buffer.color_data(), GL_STATIC_DRAW);
         glVertexAttribPointer(vertexColorID, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
+        // 3rd attribute buffer : textures
+        glEnableVertexAttribArray(vertexUVID);
+        glBindBuffer(GL_ARRAY_BUFFER, uvbuffer);
+        glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat) * buffer.texture_size(), buffer.texture_data(), GL_STATIC_DRAW);
+        glVertexAttribPointer(vertexUVID, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
         glDrawArrays(GL_TRIANGLES, 0, buffer.size() / 3);
 
         glDisableVertexAttribArray(vertexPosition_modelspaceID);
         glDisableVertexAttribArray(vertexColorID);
+        glDisableVertexAttribArray(vertexUVID);
         // Swap buffers
         glfwSwapBuffers(window);
         glfwPollEvents();
@@ -269,9 +295,10 @@ int main() {
     // Cleanup VBO and shader
     glDeleteBuffers(1, &vertexbuffer);
     glDeleteBuffers(1, &colorbuffer);
+    glDeleteBuffers(1, &uvbuffer);
+    glDeleteTextures(1, &Texture);
     glDeleteProgram(ProgramID);
-    //glDeleteTextures(1, &Texture);
-    //glDeleteVertexArrays(1, &VertexArrayID);
+//    glDeleteVertexArrays(1, &VertexArrayID);
 
     // Close OpenGL window and terminate GLFW
     glfwTerminate();

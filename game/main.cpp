@@ -62,7 +62,7 @@ GLFWwindow* initialize() {
     // Set the mouse at the center of the screen
     glfwSetCursorPos(window, 1024/2, 768/2);
 
-    // Dark blue background
+    // background
     glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
 
     // Enable depth test
@@ -93,9 +93,13 @@ std::uniform_real_distribution<float> uniform(0.0, 1.0);
 void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds, int cur_ts) {
     float x = uniform(generator) * 2 * 3.14;
     float h = uniform(generator);
-    glm::vec3 center(5 * sin(x), 0.5 + 3 * h, 5 * cos(x));
-    GLfloat radius = 1.0f + 0.05 * uniform(generator);
-    glm::vec3 angle(0, 0, 0);
+    glm::vec3 center(5 * sin(x), 0.1 + 3 * h, 5 * cos(x));
+    GLfloat radius = 0.1f + 0.05 * uniform(generator);
+    glm::vec3 angle(
+            uniform(generator) * 3.14,
+            uniform(generator) * 3.14,
+            uniform(generator) * 3.14
+    );
     std::vector<GLfloat> color({
            uniform(generator),
            uniform(generator),
@@ -103,7 +107,7 @@ void create_target(std::vector<Target>& targets, std::vector<glm::vec3>& speeds,
     });
     float brightness = std::accumulate(color.begin(), color.end(), 0.f);
     targets.emplace_back(center + Controls::position * 0.5f, radius, angle, color,
-            cur_ts + brightness * 100);
+            cur_ts + brightness * 1000);
     speeds.emplace_back(
             uniform(generator) / 100,
             uniform(generator) / 100,
@@ -190,6 +194,7 @@ int main() {
             }
         }
 
+        bool has_collision = false;
         // remove collided objects
         for (size_t i = 0; i < targets.size(); ++i) {
             for (size_t j = 0; j < fireballs.size(); ++j) {
@@ -197,10 +202,17 @@ int main() {
                     std::cout << "COLLIDE" << std::endl;
                     remove_object(targets, target_speeds, i);
                     remove_object(fireballs, fireball_speeds, j);
+                    has_collision = true;
                     break;
                 }
             }
         }
+        if (has_collision) {
+            glClearColor(1.0f, 1.0f, 0.2f, 0.0f);
+        } else {
+            glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
+        }
+
 
         if (Controls::isSpacePressed(window) && fireball_is_available(iteration, last_shoot_time)) {
             last_shoot_time = iteration;

@@ -126,10 +126,10 @@ void remove_object(std::vector<T>& objects, std::vector<glm::vec3>& speeds, int 
 
 void create_fireball(std::vector<Fireball>& fireballs, std::vector<glm::vec3>& speeds,
     const glm::vec3& direction) {
-    auto fireball = Fireball(1., 20);
-    fireball.move(Controls::position);
+    auto fireball = Fireball(0.5, 20);
+    fireball.move(Controls::position - glm::vec3(0, 1, 0));
     fireballs.emplace_back(fireball);
-    speeds.emplace_back(direction);
+    speeds.emplace_back(direction * 0.5f);
 }
 
 
@@ -211,14 +211,6 @@ int main() {
             glClearColor(1.0f, 1.0f, 0.2f, 0.0f);
         } else {
             glClearColor(0.2f, 0.2f, 0.2f, 0.0f);
-        }
-
-        // apply gravity
-        for (size_t i = 0; i < target_speeds.size(); ++i) {
-            target_speeds[i].y -= 0.00005;
-        }
-        for (size_t i = 0; i < fireball_speeds.size(); ++i) {
-            fireball_speeds[i].y -= 0.005;
         }
 
 

@@ -53,6 +53,7 @@ public:
 class Buffer {
     std::vector<GLfloat> _vertex_data;
     std::vector<GLfloat> _color_data;
+    std::vector<GLfloat> _texture_data;
 public:
     Buffer() {}
 
@@ -69,12 +70,21 @@ public:
         return _color_data.data();
     }
 
+    const void* texture_data() {
+        return _texture_data.data();
+    }
+
     size_t size() const {
         assert(_vertex_data.size() == _color_data.size());
         return _vertex_data.size();
     }
 
-    void add(const std::vector<Triangle>& triangles, const std::vector<GLfloat>& colors) {
+    size_t texture_size() const {
+        return _texture_data.size();
+    }
+
+    void add(const std::vector<Triangle>& triangles, const std::vector<GLfloat>& colors,
+        const std::vector<glm::vec2>& texcoords) {
         assert(colors.size() == 3);
 
         for (auto& triangle: triangles) {
@@ -90,6 +100,11 @@ public:
                 }
             }
         }
+
+        for (auto& coords: texcoords) {
+            _texture_data.emplace_back(coords.x);
+            _texture_data.emplace_back(coords.y);
+        }
     }
 };
 
@@ -98,12 +113,13 @@ class Object {
 protected:
     std::vector<Triangle> triangles;
     std::vector<GLfloat> colors;
+    std::vector<glm::vec2> texcoords;
 
     Object() : center(0, 0, 0) {}
 public:
     glm::vec3 center;
     void draw(Buffer& buffer) const {
-        buffer.add(triangles, colors);
+        buffer.add(triangles, colors, texcoords);
     }
 
     void move(const glm::vec3& shift) {
@@ -138,7 +154,7 @@ class Fireball : public Object {
 public:
     GLfloat radius;
 
-    Fireball(GLfloat radius, size_t triangles_count, const std::vector<GLfloat>& colors={0.0, 0.0, 0.7})
+    Fireball(GLfloat radius, size_t triangles_count, const std::vector<GLfloat>& colors={0.0, 0.0, 0.0})
     : radius(radius) {
         this->colors = colors;
         const size_t squares_count = triangles_count / 2;
@@ -169,6 +185,10 @@ public:
                     )
                 }));
 
+                texcoords.emplace_back(glm::vec2((float)j / triangles_count, 1.0 - (float)i / squares_count));
+                texcoords.emplace_back(glm::vec2((float)(j + 1) / triangles_count, 1.0 - (float)(i + 1) / squares_count));
+                texcoords.emplace_back(glm::vec2((float)(j + 1) / triangles_count, 1.0 - (float)i / squares_count));
+
 
                 //Второй треугольник
                 triangles.emplace_back(Triangle(std::vector<glm::vec3>{
@@ -188,6 +208,10 @@ public:
                         cos(theta1) * radius
                     )
                 }));
+
+                texcoords.emplace_back(glm::vec2((float)j / triangles_count, 1.0f - (float)i / squares_count));
+                texcoords.emplace_back(glm::vec2((float)j / triangles_count, 1.0f - (float)(i + 1) / squares_count));
+                texcoords.emplace_back(glm::vec2((float)(j + 1) / triangles_count, 1.0f - (float)(i + 1) / squares_count));
             }
         }
     }
